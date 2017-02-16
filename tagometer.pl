@@ -3,6 +3,7 @@
 use Mojo::RabbitMQ::Client;
 use DateTime;
 use DateTimeX::Start qw( start_of_date );
+use JSON;
 
 sub get_seconds_since_start_of_day {
    my $now = shift;
@@ -56,13 +57,20 @@ $client->on(
           message => sub {
             my ($message) = @_;
             print "Got a message:\n";
-            print $message->{body};
-            if($message->{body} =~ m/tagometer/i) {
+            print $message->{body} . "\n";
+            my $body = from_json $message->{body};
+            if($body->{msg} =~ m/tagometer/i) {
               my $now = DateTime->now(time_zone => 'Europe/Berlin');
-              my $result = (get_seconds_since_start_of_day($now) / get_seconds_total_today($now)) * 100;
+              my $percent = (get_seconds_since_start_of_day($now) / get_seconds_total_today($now)) * 100;
+              my $routing_key = $message->{routing_key};
+              my $result = to_json {
+                msg  => $percent,
+                nick => '???',
+                jid  => '???'
+              };
               my $publish = $channel->publish(
                 exchange    => 'test',
-                routing_key => 'test_queue',
+                routing_key => $routing_key,
                 body        => $result,
                 mandatory   => 0,
                 immediate   => 0,
