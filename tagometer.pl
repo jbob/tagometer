@@ -54,25 +54,29 @@ $client->on(
         my $consumer = $channel->consume(queue => 'test_queue');
         $consumer->on(
           message => sub {
-              my ($message) = @_;
-              say "Got a message:\n";
-              say $message->{body};
+            my ($message) = @_;
+            print "Got a message:\n";
+            print $message->{body};
+            if($message->{body} =~ m/tagometer/i) {
+              my $now = DateTime->now(time_zone => 'Europe/Berlin');
+              my $result = (get_seconds_since_start_of_day($now) / get_seconds_total_today($now)) * 100;
               my $publish = $channel->publish(
                 exchange    => 'test',
                 routing_key => 'test_queue',
-                body        => 'Test message',
+                body        => $result,
                 mandatory   => 0,
                 immediate   => 0,
                 header      => {}
               );
               # Deliver this message to server
               $publish->deliver;
+            }
           }
         );
         $consumer->deliver;
       }
     );
-    $channel->on(close => sub { warn 'Channel closed') });
+    $channel->on(close => sub { warn 'Channel closed' });
     $client->open_channel($channel);
   }
 );
