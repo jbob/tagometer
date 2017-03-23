@@ -20,7 +20,7 @@ sub get_seconds_total_today {
  
   # Daylight saving
   my $today = $now->truncate(to => "day");
-  my $tomorrow = $today->add(days => 1);
+  my $tomorrow = $today->clone->add(days => 1);
   if($today->is_dst && !$tomorrow->is_dst) {
     $ret += 3600; # Our day has 25 hours today
   } elsif(!$today->is_dst && $tomorrow->is_dst) {
